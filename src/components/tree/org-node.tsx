@@ -7,6 +7,16 @@ import { Button } from '@/components/ui/button';
 import { Plus, ChevronRight, ChevronDown, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
@@ -19,16 +29,22 @@ interface OrgNodeProps {
 
 export const OrgNode: React.FC<OrgNodeProps> = ({ node, onAdd, onDelete, isLast }) => {
   const [isExpanded, setIsExpanded] = useState(true);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [newName, setNewName] = useState('');
 
   const handleAdd = () => {
     if (newName) {
       onAdd(node.id, newName);
       setNewName('');
-      setIsDialogOpen(false);
+      setIsAddDialogOpen(false);
       setIsExpanded(true);
     }
+  };
+
+  const handleDeleteConfirm = () => {
+    onDelete(node.id);
+    setIsDeleteDialogOpen(false);
   };
 
   const isPrimary = node.depth === 0;
@@ -56,7 +72,7 @@ export const OrgNode: React.FC<OrgNodeProps> = ({ node, onAdd, onDelete, isLast 
                   variant="ghost" 
                   size="icon" 
                   className="h-8 w-8 rounded-full hover:bg-primary/30"
-                  onClick={() => setIsDialogOpen(true)}
+                  onClick={() => setIsAddDialogOpen(true)}
                   title="Add direct report"
                 >
                   <Plus className="h-4 w-4" />
@@ -66,7 +82,7 @@ export const OrgNode: React.FC<OrgNodeProps> = ({ node, onAdd, onDelete, isLast 
                     variant="ghost" 
                     size="icon" 
                     className="h-8 w-8 rounded-full hover:bg-destructive/10 text-destructive/70 hover:text-destructive"
-                    onClick={() => onDelete(node.id)}
+                    onClick={() => setIsDeleteDialogOpen(true)}
                     title="Remove person"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -105,7 +121,7 @@ export const OrgNode: React.FC<OrgNodeProps> = ({ node, onAdd, onDelete, isLast 
       )}
 
       {/* Add Person Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Add Direct Report</DialogTitle>
@@ -123,11 +139,32 @@ export const OrgNode: React.FC<OrgNodeProps> = ({ node, onAdd, onDelete, isLast 
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleAdd}>Add Person</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove <strong>{node.name}</strong> and all their direct reports from the hierarchy. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
