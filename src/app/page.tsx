@@ -21,7 +21,7 @@ import {
 } from '@dnd-kit/sortable';
 
 export default function Home() {
-  const { tree, addNode, updateNodeName, deleteNode, moveNode, resetTree } = useTreeData();
+  const { tree, addNode, updateNodeName, deleteNode, moveNode, resetTree, loadChildren, loadingNodes } = useTreeData();
   const [currentYear, setCurrentYear] = useState<number | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -113,6 +113,8 @@ export default function Home() {
                 onAdd={addNode} 
                 updateNodeName={updateNodeName}
                 deleteNode={deleteNode}
+                loadChildren={loadChildren}
+                loadingNodes={loadingNodes}
                 isLast={true}
               />
             </div>

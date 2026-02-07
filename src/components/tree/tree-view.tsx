@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { TreeNode } from '@/types/tree';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, ChevronRight, ChevronDown, Trash2, GripVertical, Pencil } from 'lucide-react';
+import { Plus, ChevronRight, ChevronDown, Trash2, GripVertical, Pencil, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import {
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useSortable, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
@@ -27,17 +28,30 @@ interface TreeViewProps {
   onAdd: (parentId: string, name: string) => void;
   updateNodeName: (nodeId: string, newName: string) => void;
   deleteNode: (nodeId: string) => void;
+  loadChildren?: (nodeId: string) => Promise<void>;
+  loadingNodes?: Set<string>;
   isLast?: boolean;
 }
 
-export const TreeView: React.FC<TreeViewProps> = ({ node, onAdd, updateNodeName, deleteNode, isLast }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
+export const TreeView: React.FC<TreeViewProps> = ({ 
+  node, 
+  onAdd, 
+  updateNodeName, 
+  deleteNode, 
+  loadChildren, 
+  loadingNodes,
+  isLast 
+}) => {
+  const [isExpanded, setIsExpanded] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [newName, setNewName] = useState('');
   const [editedName, setEditedName] = useState(node.name);
   const editInputRef = useRef<HTMLInputElement>(null);
+
+  const isLoading = loadingNodes?.has(node.id);
+  const needsLoading = !node.isLoaded && node.children.length > 0;
 
   const {
     attributes,
@@ -63,6 +77,16 @@ export const TreeView: React.FC<TreeViewProps> = ({ node, onAdd, updateNodeName,
       editInputRef.current.select();
     }
   }, [isEditing]);
+
+  const toggleExpand = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const nextExpanded = !isExpanded;
+    setIsExpanded(nextExpanded);
+    
+    if (nextExpanded && needsLoading && loadChildren) {
+      await loadChildren(node.id);
+    }
+  };
 
   const handleAdd = () => {
     if (newName) {
@@ -170,14 +194,21 @@ export const TreeView: React.FC<TreeViewProps> = ({ node, onAdd, updateNodeName,
                 </Button>
               )}
               
-              {node.children.length > 0 && (
+              {(node.children.length > 0) && (
                 <Button 
                   variant="ghost" 
                   size="icon" 
                   className="h-7 w-7 rounded-full"
-                  onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
+                  onClick={toggleExpand}
+                  disabled={isLoading}
                 >
-                  {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                  {isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  ) : isExpanded ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
                 </Button>
               )}
             </div>
@@ -186,20 +217,29 @@ export const TreeView: React.FC<TreeViewProps> = ({ node, onAdd, updateNodeName,
       </div>
 
       {/* Children Rendering */}
-      {isExpanded && node.children.length > 0 && (
+      {isExpanded && (
         <div className="flex flex-col">
-          <SortableContext items={node.children.map(c => c.id)} strategy={verticalListSortingStrategy}>
-            {node.children.map((child, index) => (
-              <TreeView 
-                key={child.id} 
-                node={child} 
-                onAdd={onAdd} 
-                updateNodeName={updateNodeName}
-                deleteNode={deleteNode}
-                isLast={index === node.children.length - 1}
-              />
-            ))}
-          </SortableContext>
+          {isLoading ? (
+            <div className="ml-8 space-y-2 py-2">
+              <Skeleton className="h-12 w-80 rounded-lg" />
+              <Skeleton className="h-12 w-80 rounded-lg opacity-60" />
+            </div>
+          ) : node.children.length > 0 && (
+            <SortableContext items={node.children.map(c => c.id)} strategy={verticalListSortingStrategy}>
+              {node.children.map((child, index) => (
+                <TreeView 
+                  key={child.id} 
+                  node={child} 
+                  onAdd={onAdd} 
+                  updateNodeName={updateNodeName}
+                  deleteNode={deleteNode}
+                  loadChildren={loadChildren}
+                  loadingNodes={loadingNodes}
+                  isLast={index === node.children.length - 1}
+                />
+              ))}
+            </SortableContext>
+          )}
         </div>
       )}
 

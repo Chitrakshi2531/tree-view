@@ -3,4 +3,5 @@ export interface TreeNode {
   name: string;
   children: TreeNode[];
   depth: number;
+  isLoaded?: boolean;
 }

@@ -3,23 +3,29 @@
 import { useState, useEffect, useCallback } from 'react';
 import { TreeNode } from '@/types/tree';
 
-const STORAGE_KEY = 'orgview_data_v1';
+const STORAGE_KEY = 'orgview_data_v2'; // Bumped version for new schema
 
 const INITIAL_TREE: TreeNode = {
   id: 'root',
   name: 'Sarah Chen',
   depth: 0,
+  isLoaded: true,
   children: [
     {
       id: '1',
       name: 'Marcus Rodriguez',
       depth: 1,
-      children: []
+      isLoaded: false, // Initially not loaded to demonstrate lazy loading
+      children: [
+        { id: '1-1', name: 'James Wilson', depth: 2, children: [], isLoaded: true },
+        { id: '1-2', name: 'Sofia Garcia', depth: 2, children: [], isLoaded: true }
+      ]
     },
     {
       id: '2',
       name: 'Elena Gilbert',
       depth: 1,
+      isLoaded: true,
       children: []
     }
   ]
@@ -27,6 +33,7 @@ const INITIAL_TREE: TreeNode = {
 
 export function useTreeData() {
   const [tree, setTree] = useState<TreeNode | null>(null);
+  const [loadingNodes, setLoadingNodes] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -47,14 +54,45 @@ export function useTreeData() {
     }
   }, [tree]);
 
+  const loadChildren = useCallback(async (nodeId: string) => {
+    setLoadingNodes((prev) => new Set(prev).add(nodeId));
+    
+    // Simulate API call delay
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    setTree((prev) => {
+      if (!prev) return null;
+
+      const markAsLoaded = (node: TreeNode): TreeNode => {
+        if (node.id === nodeId) {
+          return { ...node, isLoaded: true };
+        }
+        return {
+          ...node,
+          children: node.children.map(markAsLoaded)
+        };
+      };
+
+      return markAsLoaded(prev);
+    });
+
+    setLoadingNodes((prev) => {
+      const next = new Set(prev);
+      next.delete(nodeId);
+      return next;
+    });
+  }, []);
+
   const addNode = useCallback((parentId: string, name: string) => {
     setTree((prev) => {
       if (!prev) return null;
 
-      const newNode: Omit<TreeNode, 'depth'> = {
+      const newNode: TreeNode = {
         id: Math.random().toString(36).substr(2, 9),
         name,
         children: [],
+        depth: 0,
+        isLoaded: true,
       };
 
       const updateChildren = (node: TreeNode): TreeNode => {
@@ -162,5 +200,14 @@ export function useTreeData() {
     setTree(INITIAL_TREE);
   }, []);
 
-  return { tree, addNode, updateNodeName, deleteNode, moveNode, resetTree };
+  return { 
+    tree, 
+    addNode, 
+    updateNodeName, 
+    deleteNode, 
+    moveNode, 
+    resetTree, 
+    loadChildren, 
+    loadingNodes 
+  };
 }
