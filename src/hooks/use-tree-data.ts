@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { TreeNode } from '@/types/tree';
 
-const STORAGE_KEY = 'orgview_data_v2'; // Bumped version for new schema
+const STORAGE_KEY = 'orgview_data_v2';
 
 const INITIAL_TREE: TreeNode = {
   id: 'root',
@@ -15,7 +15,7 @@ const INITIAL_TREE: TreeNode = {
       id: '1',
       name: 'Marcus Rodriguez',
       depth: 1,
-      isLoaded: false, // Initially not loaded to demonstrate lazy loading
+      isLoaded: false,
       children: [
         { id: '1-1', name: 'James Wilson', depth: 2, children: [], isLoaded: true },
         { id: '1-2', name: 'Sofia Garcia', depth: 2, children: [], isLoaded: true }
@@ -39,7 +39,13 @@ export function useTreeData() {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
-        setTree(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        // Ensure the root node and its children are valid
+        const ensureChildren = (node: any): TreeNode => ({
+          ...node,
+          children: (node.children || []).map(ensureChildren)
+        });
+        setTree(ensureChildren(parsed));
       } catch (e) {
         setTree(INITIAL_TREE);
       }
@@ -69,7 +75,7 @@ export function useTreeData() {
         }
         return {
           ...node,
-          children: node.children.map(markAsLoaded)
+          children: (node.children || []).map(markAsLoaded)
         };
       };
 
@@ -97,14 +103,15 @@ export function useTreeData() {
 
       const updateChildren = (node: TreeNode): TreeNode => {
         if (node.id === parentId) {
+          const currentChildren = node.children || [];
           return {
             ...node,
-            children: [...node.children, { ...newNode, depth: node.depth + 1 }]
+            children: [...currentChildren, { ...newNode, depth: node.depth + 1 }]
           };
         }
         return {
           ...node,
-          children: node.children.map(updateChildren)
+          children: (node.children || []).map(updateChildren)
         };
       };
 
@@ -122,7 +129,7 @@ export function useTreeData() {
         }
         return {
           ...node,
-          children: node.children.map(updateName)
+          children: (node.children || []).map(updateName)
         };
       };
 
@@ -137,7 +144,7 @@ export function useTreeData() {
       const filterChildren = (node: TreeNode): TreeNode => {
         return {
           ...node,
-          children: node.children
+          children: (node.children || [])
             .filter((child) => child.id !== nodeId)
             .map(filterChildren)
         };
@@ -159,12 +166,13 @@ export function useTreeData() {
       if (activeId === newTree.id) return prev;
       
       const findAndRemove = (current: TreeNode): boolean => {
-        const index = current.children.findIndex(c => c.id === activeId);
+        const children = current.children || [];
+        const index = children.findIndex(c => c.id === activeId);
         if (index !== -1) {
-          nodeToMove = current.children.splice(index, 1)[0];
+          nodeToMove = children.splice(index, 1)[0];
           return true;
         }
-        return current.children.some(findAndRemove);
+        return children.some(findAndRemove);
       };
 
       findAndRemove(newTree);
@@ -172,22 +180,24 @@ export function useTreeData() {
 
       const isSubtree = (current: TreeNode, targetId: string): boolean => {
         if (current.id === targetId) return true;
-        return current.children.some(c => isSubtree(c, targetId));
+        return (current.children || []).some(c => isSubtree(c, targetId));
       };
       if (isSubtree(nodeToMove, overId)) return prev;
 
       const insertNodeAsChild = (current: TreeNode): boolean => {
         if (current.id === overId) {
+          if (!current.children) current.children = [];
           current.children.push(nodeToMove!);
           return true;
         }
-        return current.children.some(insertNodeAsChild);
+        return (current.children || []).some(insertNodeAsChild);
       };
 
       insertNodeAsChild(newTree);
 
       const updateDepths = (node: TreeNode, depth: number) => {
         node.depth = depth;
+        if (!node.children) node.children = [];
         node.children.forEach(c => updateDepths(c, depth + 1));
       };
       updateDepths(newTree, 0);

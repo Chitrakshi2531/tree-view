@@ -50,8 +50,9 @@ export const TreeView: React.FC<TreeViewProps> = ({
   const [editedName, setEditedName] = useState(node.name);
   const editInputRef = useRef<HTMLInputElement>(null);
 
+  const children = node.children || [];
   const isLoading = loadingNodes?.has(node.id);
-  const needsLoading = !node.isLoaded && node.children.length > 0;
+  const needsLoading = !node.isLoaded && children.length > 0;
 
   const {
     attributes,
@@ -194,7 +195,7 @@ export const TreeView: React.FC<TreeViewProps> = ({
                 </Button>
               )}
               
-              {(node.children.length > 0) && (
+              {children.length > 0 && (
                 <Button 
                   variant="ghost" 
                   size="icon" 
@@ -224,9 +225,9 @@ export const TreeView: React.FC<TreeViewProps> = ({
               <Skeleton className="h-12 w-80 rounded-lg" />
               <Skeleton className="h-12 w-80 rounded-lg opacity-60" />
             </div>
-          ) : node.children.length > 0 && (
-            <SortableContext items={node.children.map(c => c.id)} strategy={verticalListSortingStrategy}>
-              {node.children.map((child, index) => (
+          ) : children.length > 0 && (
+            <SortableContext items={children.map(c => c.id)} strategy={verticalListSortingStrategy}>
+              {children.map((child, index) => (
                 <TreeView 
                   key={child.id} 
                   node={child} 
@@ -235,7 +236,7 @@ export const TreeView: React.FC<TreeViewProps> = ({
                   deleteNode={deleteNode}
                   loadChildren={loadChildren}
                   loadingNodes={loadingNodes}
-                  isLast={index === node.children.length - 1}
+                  isLast={index === children.length - 1}
                 />
               ))}
             </SortableContext>
