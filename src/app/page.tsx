@@ -56,14 +56,14 @@ export default function Home() {
   if (!tree) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <p className="text-muted-foreground animate-pulse">Loading Hierarchy...</p>
+        <p className="text-muted-foreground animate-pulse font-medium">Loading Hierarchy...</p>
       </div>
     );
   }
 
   const findNode = (node: any, id: string): any => {
     if (node.id === id) return node;
-    for (const child of node.children) {
+    for (const child of (node.children || [])) {
       const found = findNode(child, id);
       if (found) return found;
     }
@@ -85,7 +85,7 @@ export default function Home() {
               Hierarchy Visualizer
             </h1>
             <p className="text-lg text-muted-foreground">
-              Manage your team's reporting structure effortlessly.
+              Manage your team's reporting structure with lazy loading and drag-and-drop.
             </p>
           </div>
           
@@ -123,7 +123,7 @@ export default function Home() {
 
         <footer className="fixed bottom-0 left-0 right-0 bg-white/50 backdrop-blur-md border-t p-4 text-center">
           <p className="text-xs text-muted-foreground">
-            OrgView &copy; {currentYear || '2025'} — Simple, interactive organizational charts.
+            OrgView &copy; {currentYear || '2025'} — Built for modern organizations.
           </p>
         </footer>
 
@@ -137,7 +137,7 @@ export default function Home() {
           }),
         }}>
           {activeId ? (
-            <div className="w-80 p-2 bg-white border-2 border-primary rounded-lg shadow-2xl cursor-grabbing flex items-center justify-between">
+            <div className="w-80 p-3 bg-white border-2 border-primary rounded-lg shadow-2xl cursor-grabbing flex items-center justify-between">
               <span className="text-sm font-semibold truncate px-2">
                 {activeNode?.name || 'Moving...'}
               </span>

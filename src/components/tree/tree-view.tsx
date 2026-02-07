@@ -52,10 +52,6 @@ export const TreeView: React.FC<TreeViewProps> = ({
 
   const children = node.children || [];
   const isLoading = loadingNodes?.has(node.id);
-  
-  // A node needs loading if it hasn't been loaded yet.
-  // We assume the root always has children for the demo, 
-  // or any node that isn't explicitly marked as loaded.
   const needsLoading = !node.isLoaded;
 
   const {
@@ -117,8 +113,7 @@ export const TreeView: React.FC<TreeViewProps> = ({
   const isPrimary = node.depth === 0;
   const isAccent = node.depth > 1;
 
-  // Decide whether to show the expand/collapse chevron
-  // Show it if there are already children OR if we haven't checked for children yet (needsLoading)
+  // Show expand icon if it has loaded children OR if it's potentially a manager (root or has reports)
   const canExpand = children.length > 0 || needsLoading;
 
   return (
@@ -130,7 +125,6 @@ export const TreeView: React.FC<TreeViewProps> = ({
         isDragging && "opacity-30 pointer-events-none"
       )}
     >
-      {/* Visual connectors */}
       {node.depth > 0 && <div className="dashed-line-v" />}
       {node.depth > 0 && <div className="dashed-line-h" />}
 
@@ -144,8 +138,8 @@ export const TreeView: React.FC<TreeViewProps> = ({
           <CardContent className="p-2 flex items-center justify-between gap-1">
             <div className="flex items-center gap-2 flex-1 min-w-0">
               {node.depth > 0 && (
-                <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-1 -ml-1 hover:bg-muted rounded">
-                  <GripVertical className="h-4 w-4 text-muted-foreground" />
+                <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-1 -ml-1 hover:bg-muted rounded text-muted-foreground">
+                  <GripVertical className="h-4 w-4" />
                 </div>
               )}
               
@@ -225,7 +219,6 @@ export const TreeView: React.FC<TreeViewProps> = ({
         </Card>
       </div>
 
-      {/* Children Rendering */}
       {isExpanded && (
         <div className="flex flex-col">
           {isLoading ? (
@@ -252,7 +245,6 @@ export const TreeView: React.FC<TreeViewProps> = ({
         </div>
       )}
 
-      {/* Add Person Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -277,7 +269,6 @@ export const TreeView: React.FC<TreeViewProps> = ({
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

@@ -3,22 +3,22 @@
 import { useState, useEffect, useCallback } from 'react';
 import { TreeNode } from '@/types/tree';
 
-const STORAGE_KEY = 'orgview_data_v3';
+const STORAGE_KEY = 'orgview_data_v4';
 
 const INITIAL_TREE: TreeNode = {
   id: 'root',
   name: 'Sarah Chen',
   depth: 0,
-  isLoaded: false, // Root is visible, but children are not loaded
+  isLoaded: false,
   children: []
 };
 
-// Mock data generator for lazy loading simulation
+// Mock database for lazy loading simulation
 const MOCK_REPORTS: Record<string, string[]> = {
   'root': ['Marcus Rodriguez', 'Elena Gilbert'],
-  '1': ['James Wilson', 'Sofia Garcia'],
-  '2': ['Lucas Valez'],
-  '1-1': ['Amina Khan'],
+  'root-1': ['James Wilson', 'Sofia Garcia'],
+  'root-2': ['Lucas Valez'],
+  'root-1-1': ['Amina Khan'],
 };
 
 export function useTreeData() {
@@ -54,7 +54,7 @@ export function useTreeData() {
     
     setLoadingNodes((prev) => new Set(prev).add(nodeId));
     
-    // Simulate API call delay
+    // Simulate async API behavior
     await new Promise((resolve) => setTimeout(resolve, 800));
 
     setTree((prev) => {
@@ -62,19 +62,18 @@ export function useTreeData() {
 
       const populate = (node: TreeNode): TreeNode => {
         if (node.id === nodeId) {
-          // If the node already has children (added manually or previously loaded), just mark as loaded
-          if (node.children && node.children.length > 0) {
+          // If already loaded or has local modifications, just mark as loaded
+          if (node.isLoaded || (node.children && node.children.length > 0)) {
             return { ...node, isLoaded: true };
           }
 
-          // Otherwise, fetch mock reports
-          const reportNames = MOCK_REPORTS[node.id] || [];
+          const reportNames = MOCK_REPORTS[nodeId] || [];
           const mockChildren: TreeNode[] = reportNames.map((name, index) => ({
-            id: `${node.id}-${index + 1}`,
+            id: `${nodeId}-${index + 1}`,
             name,
             depth: node.depth + 1,
             children: [],
-            isLoaded: false // Children of these new nodes are also lazy loaded
+            isLoaded: false
           }));
 
           return { 
@@ -108,16 +107,15 @@ export function useTreeData() {
         name,
         children: [],
         depth: 0,
-        isLoaded: true, // Manually added nodes are leaf nodes by default
+        isLoaded: true,
       };
 
       const updateChildren = (node: TreeNode): TreeNode => {
         if (node.id === parentId) {
-          const currentChildren = node.children || [];
           return {
             ...node,
-            isLoaded: true, // Ensure parent is marked as loaded
-            children: [...currentChildren, { ...newNode, depth: node.depth + 1 }]
+            isLoaded: true,
+            children: [...(node.children || []), { ...newNode, depth: node.depth + 1 }]
           };
         }
         return {
@@ -189,17 +187,18 @@ export function useTreeData() {
       findAndRemove(newTree);
       if (!nodeToMove) return prev;
 
-      const isSubtree = (current: TreeNode, targetId: string): boolean => {
+      // Prevent moving a node into its own descendant
+      const isDescendant = (current: TreeNode, targetId: string): boolean => {
         if (current.id === targetId) return true;
-        return (current.children || []).some(c => isSubtree(c, targetId));
+        return (current.children || []).some(c => isDescendant(c, targetId));
       };
-      if (isSubtree(nodeToMove, overId)) return prev;
+      if (isDescendant(nodeToMove, overId)) return prev;
 
       const insertNodeAsChild = (current: TreeNode): boolean => {
         if (current.id === overId) {
           if (!current.children) current.children = [];
           current.children.push(nodeToMove!);
-          current.isLoaded = true; // Mark target as loaded if we drop someone into it
+          current.isLoaded = true;
           return true;
         }
         return (current.children || []).some(insertNodeAsChild);
@@ -209,8 +208,7 @@ export function useTreeData() {
 
       const updateDepths = (node: TreeNode, depth: number) => {
         node.depth = depth;
-        if (!node.children) node.children = [];
-        node.children.forEach(c => updateDepths(c, depth + 1));
+        (node.children || []).forEach(c => updateDepths(c, depth + 1));
       };
       updateDepths(newTree, 0);
 
