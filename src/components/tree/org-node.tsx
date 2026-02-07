@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { TreeNode } from '@/types/tree';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Minus, ChevronRight, ChevronDown, Trash2 } from 'lucide-react';
+import { Plus, ChevronRight, ChevronDown, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 
 interface OrgNodeProps {
   node: TreeNode;
-  onAdd: (parentId: string, name: string, role: string) => void;
+  onAdd: (parentId: string, name: string) => void;
   onDelete: (nodeId: string) => void;
   isLast?: boolean;
 }
@@ -21,13 +21,11 @@ export const OrgNode: React.FC<OrgNodeProps> = ({ node, onAdd, onDelete, isLast 
   const [isExpanded, setIsExpanded] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newName, setNewName] = useState('');
-  const [newRole, setNewRole] = useState('');
 
   const handleAdd = () => {
-    if (newName && newRole) {
-      onAdd(node.id, newName, newRole);
+    if (newName) {
+      onAdd(node.id, newName);
       setNewName('');
-      setNewRole('');
       setIsDialogOpen(false);
       setIsExpanded(true);
     }
@@ -49,12 +47,7 @@ export const OrgNode: React.FC<OrgNodeProps> = ({ node, onAdd, onDelete, isLast 
         )}>
           <CardContent className="p-4 relative">
             <div className="flex flex-col">
-              <span className="text-xs font-bold uppercase text-muted-foreground tracking-wider mb-1">{node.role}</span>
               <span className="text-base font-semibold text-foreground">{node.name}</span>
-            </div>
-
-            <div className="absolute right-2 top-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-               {/* Controls will show on hover if we wrap in group, but for better UX let's keep them accessible */}
             </div>
 
             <div className="mt-4 flex items-center justify-between">
@@ -115,25 +108,17 @@ export const OrgNode: React.FC<OrgNodeProps> = ({ node, onAdd, onDelete, isLast 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Add New Team Member</DialogTitle>
+            <DialogTitle>Add New Node</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="name">Name</Label>
               <Input 
                 id="name" 
-                placeholder="e.g. Jane Doe" 
+                placeholder="e.g. Engineering" 
                 value={newName} 
                 onChange={(e) => setNewName(e.target.value)}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="role">Role / Department</Label>
-              <Input 
-                id="role" 
-                placeholder="e.g. Senior Developer" 
-                value={newRole} 
-                onChange={(e) => setNewRole(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
               />
             </div>
           </div>

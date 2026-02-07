@@ -8,20 +8,17 @@ const STORAGE_KEY = 'orgview_tree_data';
 const INITIAL_DATA: TreeNode = {
   id: 'root',
   name: 'Organization Root',
-  role: 'CEO',
   depth: 0,
   children: [
     {
       id: '1',
       name: 'Engineering',
-      role: 'CTO',
       depth: 1,
       children: []
     },
     {
       id: '2',
       name: 'Marketing',
-      role: 'CMO',
       depth: 1,
       children: []
     }
@@ -53,16 +50,14 @@ export function useTreeData() {
     }
   }, [tree]);
 
-  const addNode = useCallback((parentId: string, name: string, role: string) => {
+  const addNode = useCallback((parentId: string, name: string) => {
     setTree((prev) => {
       if (!prev) return null;
 
-      const newNode: TreeNode = {
+      const newNode: Omit<TreeNode, 'depth'> = {
         id: Math.random().toString(36).substr(2, 9),
         name,
-        role,
         children: [],
-        depth: 0, // Will be calculated by update
       };
 
       const updateChildren = (node: TreeNode): TreeNode => {
