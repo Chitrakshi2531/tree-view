@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect, useCallback } from 'react';
@@ -28,7 +29,6 @@ const INITIAL_DATA: TreeNode = {
 export function useTreeData() {
   const [tree, setTree] = useState<TreeNode | null>(null);
 
-  // Load from local storage on mount
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
@@ -42,7 +42,6 @@ export function useTreeData() {
     }
   }, []);
 
-  // Save to local storage whenever tree changes
   useEffect(() => {
     if (tree) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(tree));
@@ -93,9 +92,83 @@ export function useTreeData() {
     });
   }, []);
 
+  const moveNode = useCallback((activeId: string, overId: string) => {
+    setTree((prev) => {
+      if (!prev || activeId === overId) return prev;
+
+      // Deep copy to mutate
+      const newTree = JSON.parse(JSON.stringify(prev));
+      let nodeToMove: TreeNode | null = null;
+
+      // Helper to find and remove node from its current parent
+      const findAndRemove = (current: TreeNode): boolean => {
+        const index = current.children.findIndex(c => c.id === activeId);
+        if (index !== -1) {
+          nodeToMove = current.children.splice(index, 1)[0];
+          return true;
+        }
+        return current.children.some(findAndRemove);
+      };
+
+      // Hierarchy integrity check: can't move root, or move a node into its own subtree
+      if (activeId === newTree.id) return prev;
+      
+      const isSubtree = (current: TreeNode, targetId: string): boolean => {
+        if (current.id === targetId) return true;
+        return current.children.some(c => isSubtree(c, targetId));
+      };
+
+      // We need to find the node in the original tree to check subtree
+      const findNode = (current: TreeNode, id: string): TreeNode | null => {
+        if (current.id === id) return current;
+        for (const child of current.children) {
+          const found = findNode(child, id);
+          if (found) return found;
+        }
+        return null;
+      };
+
+      const sourceNode = findNode(newTree, activeId);
+      if (sourceNode && isSubtree(sourceNode, overId)) return prev;
+
+      // Perform the move
+      findAndRemove(newTree);
+      if (!nodeToMove) return prev;
+
+      // Helper to insert into new parent or next to sibling
+      const insertNode = (current: TreeNode): boolean => {
+        if (current.id === overId) {
+          // Drop on a node to make it a child
+          current.children.push(nodeToMove!);
+          return true;
+        }
+        
+        // Try to find if overId is a sibling to reorder
+        const overIndex = current.children.findIndex(c => c.id === overId);
+        if (overIndex !== -1) {
+          current.children.splice(overIndex, 0, nodeToMove!);
+          return true;
+        }
+
+        return current.children.some(insertNode);
+      };
+
+      insertNode(newTree);
+
+      // Recalculate depths
+      const updateDepths = (node: TreeNode, depth: number) => {
+        node.depth = depth;
+        node.children.forEach(c => updateDepths(c, depth + 1));
+      };
+      updateDepths(newTree, 0);
+
+      return newTree;
+    });
+  }, []);
+
   const resetTree = useCallback(() => {
     setTree(INITIAL_DATA);
   }, []);
 
-  return { tree, addNode, deleteNode, resetTree };
+  return { tree, addNode, deleteNode, moveNode, resetTree };
 }

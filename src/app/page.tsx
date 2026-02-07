@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useEffect } from 'react';
@@ -5,14 +6,52 @@ import { useTreeData } from '@/hooks/use-tree-data';
 import { OrgNode } from '@/components/tree/org-node';
 import { Button } from '@/components/ui/button';
 import { RefreshCcw, Share2, Download } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragOverlay,
+} from '@dnd-kit/core';
+import {
+  sortableKeyboardCoordinates,
+} from '@dnd-kit/sortable';
 
 export default function Home() {
-  const { tree, addNode, deleteNode, resetTree } = useTreeData();
+  const { tree, addNode, deleteNode, moveNode, resetTree } = useTreeData();
   const [currentYear, setCurrentYear] = useState<number | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   useEffect(() => {
     setCurrentYear(new Date().getFullYear());
   }, []);
+
+  const handleDragStart = (event: { active: { id: string } }) => {
+    setActiveId(event.active.id);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (over && active.id !== over.id) {
+      moveNode(active.id.toString(), over.id.toString());
+    }
+  };
 
   if (!tree) {
     return (
@@ -53,12 +92,26 @@ export default function Home() {
       <main className="max-w-6xl mx-auto">
         <div className="overflow-x-auto pb-20">
           <div className="inline-block min-w-full">
-            <OrgNode 
-              node={tree} 
-              onAdd={addNode} 
-              deleteNode={deleteNode}
-              isLast={true}
-            />
+            <DndContext 
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+            >
+              <OrgNode 
+                node={tree} 
+                onAdd={addNode} 
+                deleteNode={deleteNode}
+                isLast={true}
+              />
+              <DragOverlay>
+                {activeId ? (
+                  <div className="w-72 p-3 bg-white border-2 border-primary rounded-lg shadow-xl opacity-80 cursor-grabbing">
+                    <span className="text-base font-semibold text-foreground">Moving...</span>
+                  </div>
+                ) : null}
+              </DragOverlay>
+            </DndContext>
           </div>
         </div>
       </main>
