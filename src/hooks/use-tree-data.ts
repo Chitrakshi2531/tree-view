@@ -3,32 +3,22 @@
 import { useState, useEffect, useCallback } from 'react';
 import { TreeNode } from '@/types/tree';
 
-const STORAGE_KEY = 'orgview_data_v2';
+const STORAGE_KEY = 'orgview_data_v3';
 
 const INITIAL_TREE: TreeNode = {
   id: 'root',
   name: 'Sarah Chen',
   depth: 0,
-  isLoaded: true,
-  children: [
-    {
-      id: '1',
-      name: 'Marcus Rodriguez',
-      depth: 1,
-      isLoaded: false,
-      children: [
-        { id: '1-1', name: 'James Wilson', depth: 2, children: [], isLoaded: true },
-        { id: '1-2', name: 'Sofia Garcia', depth: 2, children: [], isLoaded: true }
-      ]
-    },
-    {
-      id: '2',
-      name: 'Elena Gilbert',
-      depth: 1,
-      isLoaded: true,
-      children: []
-    }
-  ]
+  isLoaded: false, // Root is visible, but children are not loaded
+  children: []
+};
+
+// Mock data generator for lazy loading simulation
+const MOCK_REPORTS: Record<string, string[]> = {
+  'root': ['Marcus Rodriguez', 'Elena Gilbert'],
+  '1': ['James Wilson', 'Sofia Garcia'],
+  '2': ['Lucas Valez'],
+  '1-1': ['Amina Khan'],
 };
 
 export function useTreeData() {
@@ -40,7 +30,6 @@ export function useTreeData() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        // Ensure the root node and its children are valid
         const ensureChildren = (node: any): TreeNode => ({
           ...node,
           children: (node.children || []).map(ensureChildren)
@@ -61,25 +50,46 @@ export function useTreeData() {
   }, [tree]);
 
   const loadChildren = useCallback(async (nodeId: string) => {
+    if (loadingNodes.has(nodeId)) return;
+    
     setLoadingNodes((prev) => new Set(prev).add(nodeId));
     
     // Simulate API call delay
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 800));
 
     setTree((prev) => {
       if (!prev) return null;
 
-      const markAsLoaded = (node: TreeNode): TreeNode => {
+      const populate = (node: TreeNode): TreeNode => {
         if (node.id === nodeId) {
-          return { ...node, isLoaded: true };
+          // If the node already has children (added manually or previously loaded), just mark as loaded
+          if (node.children && node.children.length > 0) {
+            return { ...node, isLoaded: true };
+          }
+
+          // Otherwise, fetch mock reports
+          const reportNames = MOCK_REPORTS[node.id] || [];
+          const mockChildren: TreeNode[] = reportNames.map((name, index) => ({
+            id: `${node.id}-${index + 1}`,
+            name,
+            depth: node.depth + 1,
+            children: [],
+            isLoaded: false // Children of these new nodes are also lazy loaded
+          }));
+
+          return { 
+            ...node, 
+            isLoaded: true, 
+            children: mockChildren 
+          };
         }
         return {
           ...node,
-          children: (node.children || []).map(markAsLoaded)
+          children: (node.children || []).map(populate)
         };
       };
 
-      return markAsLoaded(prev);
+      return populate(prev);
     });
 
     setLoadingNodes((prev) => {
@@ -87,7 +97,7 @@ export function useTreeData() {
       next.delete(nodeId);
       return next;
     });
-  }, []);
+  }, [loadingNodes]);
 
   const addNode = useCallback((parentId: string, name: string) => {
     setTree((prev) => {
@@ -98,7 +108,7 @@ export function useTreeData() {
         name,
         children: [],
         depth: 0,
-        isLoaded: true,
+        isLoaded: true, // Manually added nodes are leaf nodes by default
       };
 
       const updateChildren = (node: TreeNode): TreeNode => {
@@ -106,6 +116,7 @@ export function useTreeData() {
           const currentChildren = node.children || [];
           return {
             ...node,
+            isLoaded: true, // Ensure parent is marked as loaded
             children: [...currentChildren, { ...newNode, depth: node.depth + 1 }]
           };
         }
@@ -188,6 +199,7 @@ export function useTreeData() {
         if (current.id === overId) {
           if (!current.children) current.children = [];
           current.children.push(nodeToMove!);
+          current.isLoaded = true; // Mark target as loaded if we drop someone into it
           return true;
         }
         return (current.children || []).some(insertNodeAsChild);
@@ -207,6 +219,7 @@ export function useTreeData() {
   }, []);
 
   const resetTree = useCallback(() => {
+    localStorage.removeItem(STORAGE_KEY);
     setTree(INITIAL_TREE);
   }, []);
 

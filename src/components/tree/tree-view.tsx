@@ -52,7 +52,11 @@ export const TreeView: React.FC<TreeViewProps> = ({
 
   const children = node.children || [];
   const isLoading = loadingNodes?.has(node.id);
-  const needsLoading = !node.isLoaded && children.length > 0;
+  
+  // A node needs loading if it hasn't been loaded yet.
+  // We assume the root always has children for the demo, 
+  // or any node that isn't explicitly marked as loaded.
+  const needsLoading = !node.isLoaded;
 
   const {
     attributes,
@@ -112,6 +116,10 @@ export const TreeView: React.FC<TreeViewProps> = ({
 
   const isPrimary = node.depth === 0;
   const isAccent = node.depth > 1;
+
+  // Decide whether to show the expand/collapse chevron
+  // Show it if there are already children OR if we haven't checked for children yet (needsLoading)
+  const canExpand = children.length > 0 || needsLoading;
 
   return (
     <div 
@@ -195,7 +203,7 @@ export const TreeView: React.FC<TreeViewProps> = ({
                 </Button>
               )}
               
-              {children.length > 0 && (
+              {canExpand && (
                 <Button 
                   variant="ghost" 
                   size="icon" 
