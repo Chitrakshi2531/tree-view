@@ -1,6 +1,6 @@
 "use client"
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTreeData } from '@/hooks/use-tree-data';
 import { OrgNode } from '@/components/tree/org-node';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,11 @@ import { RefreshCcw, Share2, Download } from 'lucide-react';
 
 export default function Home() {
   const { tree, addNode, deleteNode, resetTree } = useTreeData();
+  const [currentYear, setCurrentYear] = useState<number | null>(null);
+
+  useEffect(() => {
+    setCurrentYear(new Date().getFullYear());
+  }, []);
 
   if (!tree) {
     return (
@@ -60,7 +65,7 @@ export default function Home() {
 
       <footer className="fixed bottom-0 left-0 right-0 bg-white/50 backdrop-blur-md border-t p-4 text-center">
         <p className="text-xs text-muted-foreground">
-          OrgView &copy; {new Date().getFullYear()} — Changes are automatically saved to your browser.
+          OrgView &copy; {currentYear || '2025'} — Changes are automatically saved to your browser.
         </p>
       </footer>
     </div>
