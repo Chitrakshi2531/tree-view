@@ -98,10 +98,14 @@ export function useTreeData() {
     setTree((prev) => {
       if (!prev) return null;
 
+      // Deep clone to avoid mutations
       const newTree = JSON.parse(JSON.stringify(prev));
       let nodeToMove: TreeNode | null = null;
 
-      // Find and remove the node from its current position
+      // Root cannot be moved
+      if (activeId === newTree.id) return prev;
+      
+      // 1. Find and remove the node from its current position
       const findAndRemove = (current: TreeNode): boolean => {
         const index = current.children.findIndex(c => c.id === activeId);
         if (index !== -1) {
@@ -111,50 +115,28 @@ export function useTreeData() {
         return current.children.some(findAndRemove);
       };
 
-      // Root cannot be moved
-      if (activeId === newTree.id) return prev;
-      
-      // Check if moving into its own subtree
+      findAndRemove(newTree);
+      if (!nodeToMove) return prev;
+
+      // 2. Prevent cycles: Check if the target is in the subtree of the moving node
       const isSubtree = (current: TreeNode, targetId: string): boolean => {
         if (current.id === targetId) return true;
         return current.children.some(c => isSubtree(c, targetId));
       };
+      if (isSubtree(nodeToMove, overId)) return prev;
 
-      const findNode = (current: TreeNode, id: string): TreeNode | null => {
-        if (current.id === id) return current;
-        for (const child of current.children) {
-          const found = findNode(child, id);
-          if (found) return found;
-        }
-        return null;
-      };
-
-      const sourceNode = findNode(newTree, activeId);
-      if (sourceNode && isSubtree(sourceNode, overId)) return prev;
-
-      findAndRemove(newTree);
-      if (!nodeToMove) return prev;
-
-      // Insert the node at its new position
-      const insertNode = (current: TreeNode): boolean => {
+      // 3. Insert the node as a child of the target node (reparenting)
+      const insertNodeAsChild = (current: TreeNode): boolean => {
         if (current.id === overId) {
           current.children.push(nodeToMove!);
           return true;
         }
-        
-        // Handle insertion as a sibling or child
-        const overIndex = current.children.findIndex(c => c.id === overId);
-        if (overIndex !== -1) {
-          current.children.splice(overIndex, 0, nodeToMove!);
-          return true;
-        }
-
-        return current.children.some(insertNode);
+        return current.children.some(insertNodeAsChild);
       };
 
-      insertNode(newTree);
+      insertNodeAsChild(newTree);
 
-      // Recalculate depths
+      // 4. Recalculate all depths for visual accuracy
       const updateDepths = (node: TreeNode, depth: number) => {
         node.depth = depth;
         node.children.forEach(c => updateDepths(c, depth + 1));
