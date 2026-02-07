@@ -7,7 +7,7 @@ const STORAGE_KEY = 'orgview_tree_data';
 
 const INITIAL_DATA: TreeNode = {
   id: 'root',
-  name: 'Sarah Chen (CEO)',
+  name: 'Sarah Chen',
   depth: 0,
   children: [
     {
