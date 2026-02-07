@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useTreeData } from '@/hooks/use-tree-data';
-import { OrgNode } from '@/components/tree/org-node';
+import { TreeView } from '@/components/tree/tree-view';
 import { Button } from '@/components/ui/button';
 import { RefreshCcw, Share2, Download } from 'lucide-react';
 import {
@@ -108,7 +108,7 @@ export default function Home() {
         <main className="max-w-6xl mx-auto">
           <div className="overflow-x-auto pb-20">
             <div className="inline-block min-w-full">
-              <OrgNode 
+              <TreeView 
                 node={tree} 
                 onAdd={addNode} 
                 updateNodeName={updateNodeName}
