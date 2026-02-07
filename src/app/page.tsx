@@ -56,7 +56,7 @@ export default function Home() {
             <OrgNode 
               node={tree} 
               onAdd={addNode} 
-              onDelete={deleteNode}
+              deleteNode={deleteNode}
               isLast={true}
             />
           </div>

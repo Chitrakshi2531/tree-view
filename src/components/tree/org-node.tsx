@@ -23,11 +23,11 @@ import { Label } from '@/components/ui/label';
 interface OrgNodeProps {
   node: TreeNode;
   onAdd: (parentId: string, name: string) => void;
-  onDelete: (nodeId: string) => void;
+  deleteNode: (nodeId: string) => void;
   isLast?: boolean;
 }
 
-export const OrgNode: React.FC<OrgNodeProps> = ({ node, onAdd, onDelete, isLast }) => {
+export const OrgNode: React.FC<OrgNodeProps> = ({ node, onAdd, deleteNode, isLast }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -43,7 +43,7 @@ export const OrgNode: React.FC<OrgNodeProps> = ({ node, onAdd, onDelete, isLast 
   };
 
   const handleDeleteConfirm = () => {
-    onDelete(node.id);
+    deleteNode(node.id);
     setIsDeleteDialogOpen(false);
   };
 
@@ -58,37 +58,36 @@ export const OrgNode: React.FC<OrgNodeProps> = ({ node, onAdd, onDelete, isLast 
 
       <div className="flex items-center gap-4 tree-node-enter">
         <Card className={cn(
-          "w-64 shadow-md transition-all duration-300 hover:shadow-lg border-2",
+          "w-72 shadow-md transition-all duration-300 hover:shadow-lg border-2",
           isPrimary ? "bg-primary/20 border-primary" : (isAccent ? "bg-accent/20 border-accent" : "bg-white border-muted")
         )}>
-          <CardContent className="p-4 relative">
-            <div className="flex flex-col">
-              <span className="text-base font-semibold text-foreground">{node.name}</span>
-            </div>
+          <CardContent className="p-3 flex items-center justify-between gap-3">
+            <span className="text-base font-semibold text-foreground truncate flex-1">
+              {node.name}
+            </span>
 
-            <div className="mt-4 flex items-center justify-between">
-              <div className="flex gap-2">
+            <div className="flex items-center gap-1 shrink-0">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 rounded-full hover:bg-primary/30"
+                onClick={() => setIsAddDialogOpen(true)}
+                title="Add direct report"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+              
+              {node.depth > 0 && (
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="h-8 w-8 rounded-full hover:bg-primary/30"
-                  onClick={() => setIsAddDialogOpen(true)}
-                  title="Add direct report"
+                  className="h-8 w-8 rounded-full hover:bg-destructive/10 text-destructive/70 hover:text-destructive"
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                  title="Remove person"
                 >
-                  <Plus className="h-4 w-4" />
+                  <Trash2 className="h-4 w-4" />
                 </Button>
-                {node.depth > 0 && (
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-8 w-8 rounded-full hover:bg-destructive/10 text-destructive/70 hover:text-destructive"
-                    onClick={() => setIsDeleteDialogOpen(true)}
-                    title="Remove person"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
+              )}
               
               {node.children.length > 0 && (
                 <Button 
@@ -113,7 +112,7 @@ export const OrgNode: React.FC<OrgNodeProps> = ({ node, onAdd, onDelete, isLast 
               key={child.id} 
               node={child} 
               onAdd={onAdd} 
-              onDelete={onDelete}
+              deleteNode={deleteNode}
               isLast={index === node.children.length - 1}
             />
           ))}
