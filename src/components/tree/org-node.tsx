@@ -57,7 +57,7 @@ export const OrgNode: React.FC<OrgNodeProps> = ({ node, onAdd, onDelete, isLast 
                   size="icon" 
                   className="h-8 w-8 rounded-full hover:bg-primary/30"
                   onClick={() => setIsDialogOpen(true)}
-                  title="Add child node"
+                  title="Add direct report"
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
@@ -67,7 +67,7 @@ export const OrgNode: React.FC<OrgNodeProps> = ({ node, onAdd, onDelete, isLast 
                     size="icon" 
                     className="h-8 w-8 rounded-full hover:bg-destructive/10 text-destructive/70 hover:text-destructive"
                     onClick={() => onDelete(node.id)}
-                    title="Delete node"
+                    title="Remove person"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -104,18 +104,18 @@ export const OrgNode: React.FC<OrgNodeProps> = ({ node, onAdd, onDelete, isLast 
         </div>
       )}
 
-      {/* Add Node Dialog */}
+      {/* Add Person Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Add New Node</DialogTitle>
+            <DialogTitle>Add Direct Report</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="name">Name</Label>
+              <Label htmlFor="name">Person Name</Label>
               <Input 
                 id="name" 
-                placeholder="e.g. Engineering" 
+                placeholder="e.g. Jane Doe" 
                 value={newName} 
                 onChange={(e) => setNewName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
@@ -124,7 +124,7 @@ export const OrgNode: React.FC<OrgNodeProps> = ({ node, onAdd, onDelete, isLast 
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleAdd}>Add Node</Button>
+            <Button onClick={handleAdd}>Add Person</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

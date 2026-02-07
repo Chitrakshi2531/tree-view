@@ -7,18 +7,18 @@ const STORAGE_KEY = 'orgview_tree_data';
 
 const INITIAL_DATA: TreeNode = {
   id: 'root',
-  name: 'Organization Root',
+  name: 'Sarah Chen (CEO)',
   depth: 0,
   children: [
     {
       id: '1',
-      name: 'Engineering',
+      name: 'Marcus Rodriguez',
       depth: 1,
       children: []
     },
     {
       id: '2',
-      name: 'Marketing',
+      name: 'Elena Gilbert',
       depth: 1,
       children: []
     }
@@ -35,7 +35,6 @@ export function useTreeData() {
       try {
         setTree(JSON.parse(saved));
       } catch (e) {
-        console.error("Failed to parse saved tree data", e);
         setTree(INITIAL_DATA);
       }
     } else {
@@ -79,7 +78,7 @@ export function useTreeData() {
 
   const deleteNode = useCallback((nodeId: string) => {
     setTree((prev) => {
-      if (!prev || prev.id === nodeId) return prev; // Cannot delete root easily in this simple model
+      if (!prev || prev.id === nodeId) return prev;
 
       const filterChildren = (node: TreeNode): TreeNode => {
         return {
