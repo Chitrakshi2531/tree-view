@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect } from 'react';
@@ -22,7 +21,7 @@ import {
 } from '@dnd-kit/sortable';
 
 export default function Home() {
-  const { tree, addNode, deleteNode, moveNode, resetTree } = useTreeData();
+  const { tree, addNode, updateNodeName, deleteNode, moveNode, resetTree } = useTreeData();
   const [currentYear, setCurrentYear] = useState<number | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -62,7 +61,6 @@ export default function Home() {
     );
   }
 
-  // Find the person being dragged for the overlay
   const findNode = (node: any, id: string): any => {
     if (node.id === id) return node;
     for (const child of node.children) {
@@ -113,6 +111,7 @@ export default function Home() {
               <OrgNode 
                 node={tree} 
                 onAdd={addNode} 
+                updateNodeName={updateNodeName}
                 deleteNode={deleteNode}
                 isLast={true}
               />
@@ -136,8 +135,8 @@ export default function Home() {
           }),
         }}>
           {activeId ? (
-            <div className="w-72 p-3 bg-white border-2 border-primary rounded-lg shadow-2xl cursor-grabbing flex items-center justify-between">
-              <span className="text-sm font-semibold truncate">
+            <div className="w-80 p-2 bg-white border-2 border-primary rounded-lg shadow-2xl cursor-grabbing flex items-center justify-between">
+              <span className="text-sm font-semibold truncate px-2">
                 {activeNode?.name || 'Moving...'}
               </span>
             </div>

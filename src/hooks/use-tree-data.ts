@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect, useCallback } from 'react';
@@ -75,6 +74,24 @@ export function useTreeData() {
     });
   }, []);
 
+  const updateNodeName = useCallback((nodeId: string, newName: string) => {
+    setTree((prev) => {
+      if (!prev) return null;
+
+      const updateName = (node: TreeNode): TreeNode => {
+        if (node.id === nodeId) {
+          return { ...node, name: newName };
+        }
+        return {
+          ...node,
+          children: node.children.map(updateName)
+        };
+      };
+
+      return updateName(prev);
+    });
+  }, []);
+
   const deleteNode = useCallback((nodeId: string) => {
     setTree((prev) => {
       if (!prev || prev.id === nodeId) return prev;
@@ -98,14 +115,11 @@ export function useTreeData() {
     setTree((prev) => {
       if (!prev) return null;
 
-      // Deep clone to avoid mutations
       const newTree = JSON.parse(JSON.stringify(prev));
       let nodeToMove: TreeNode | null = null;
 
-      // Root cannot be moved
       if (activeId === newTree.id) return prev;
       
-      // 1. Find and remove the node from its current position
       const findAndRemove = (current: TreeNode): boolean => {
         const index = current.children.findIndex(c => c.id === activeId);
         if (index !== -1) {
@@ -118,14 +132,12 @@ export function useTreeData() {
       findAndRemove(newTree);
       if (!nodeToMove) return prev;
 
-      // 2. Prevent cycles: Check if the target is in the subtree of the moving node
       const isSubtree = (current: TreeNode, targetId: string): boolean => {
         if (current.id === targetId) return true;
         return current.children.some(c => isSubtree(c, targetId));
       };
       if (isSubtree(nodeToMove, overId)) return prev;
 
-      // 3. Insert the node as a child of the target node (reparenting)
       const insertNodeAsChild = (current: TreeNode): boolean => {
         if (current.id === overId) {
           current.children.push(nodeToMove!);
@@ -136,7 +148,6 @@ export function useTreeData() {
 
       insertNodeAsChild(newTree);
 
-      // 4. Recalculate all depths for visual accuracy
       const updateDepths = (node: TreeNode, depth: number) => {
         node.depth = depth;
         node.children.forEach(c => updateDepths(c, depth + 1));
@@ -151,5 +162,5 @@ export function useTreeData() {
     setTree(INITIAL_TREE);
   }, []);
 
-  return { tree, addNode, deleteNode, moveNode, resetTree };
+  return { tree, addNode, updateNodeName, deleteNode, moveNode, resetTree };
 }

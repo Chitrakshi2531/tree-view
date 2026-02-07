@@ -1,11 +1,10 @@
-
 "use client"
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { TreeNode } from '@/types/tree';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, ChevronRight, ChevronDown, Trash2, GripVertical } from 'lucide-react';
+import { Plus, ChevronRight, ChevronDown, Trash2, GripVertical, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import {
@@ -26,15 +25,19 @@ import { CSS } from '@dnd-kit/utilities';
 interface OrgNodeProps {
   node: TreeNode;
   onAdd: (parentId: string, name: string) => void;
+  updateNodeName: (nodeId: string, newName: string) => void;
   deleteNode: (nodeId: string) => void;
   isLast?: boolean;
 }
 
-export const OrgNode: React.FC<OrgNodeProps> = ({ node, onAdd, deleteNode, isLast }) => {
+export const OrgNode: React.FC<OrgNodeProps> = ({ node, onAdd, updateNodeName, deleteNode, isLast }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [newName, setNewName] = useState('');
+  const [editedName, setEditedName] = useState(node.name);
+  const editInputRef = useRef<HTMLInputElement>(null);
 
   const {
     attributes,
@@ -46,13 +49,20 @@ export const OrgNode: React.FC<OrgNodeProps> = ({ node, onAdd, deleteNode, isLas
     isOver,
   } = useSortable({ 
     id: node.id,
-    disabled: node.depth === 0 // Root node is not draggable
+    disabled: node.depth === 0 || isEditing // Disable drag while editing
   });
 
   const style = {
     transform: CSS.Translate.toString(transform),
     transition,
   };
+
+  useEffect(() => {
+    if (isEditing && editInputRef.current) {
+      editInputRef.current.focus();
+      editInputRef.current.select();
+    }
+  }, [isEditing]);
 
   const handleAdd = () => {
     if (newName) {
@@ -61,6 +71,13 @@ export const OrgNode: React.FC<OrgNodeProps> = ({ node, onAdd, deleteNode, isLas
       setIsAddDialogOpen(false);
       setIsExpanded(true);
     }
+  };
+
+  const handleEditSubmit = () => {
+    if (editedName && editedName !== node.name) {
+      updateNodeName(node.id, editedName);
+    }
+    setIsEditing(false);
   };
 
   const handleDeleteConfirm = () => {
@@ -86,28 +103,55 @@ export const OrgNode: React.FC<OrgNodeProps> = ({ node, onAdd, deleteNode, isLas
 
       <div className="flex items-center gap-4 tree-node-enter group">
         <Card className={cn(
-          "w-72 shadow-md transition-all duration-300 border-2",
+          "w-80 shadow-md transition-all duration-300 border-2",
           isOver && !isDragging && "border-primary border-dashed bg-primary/5",
           !isOver && (isPrimary ? "bg-primary/20 border-primary" : (isAccent ? "bg-accent/20 border-accent" : "bg-white border-muted")),
           "hover:shadow-lg"
         )}>
-          <CardContent className="p-3 flex items-center justify-between gap-2">
+          <CardContent className="p-2 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 flex-1 min-w-0">
               {node.depth > 0 && (
                 <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-1 -ml-1 hover:bg-muted rounded">
                   <GripVertical className="h-4 w-4 text-muted-foreground" />
                 </div>
               )}
-              <span className="text-base font-semibold text-foreground truncate">
-                {node.name}
-              </span>
+              
+              <div 
+                className="flex-1 min-w-0 px-1"
+                onDoubleClick={() => setIsEditing(true)}
+              >
+                {isEditing ? (
+                  <Input
+                    ref={editInputRef}
+                    value={editedName}
+                    onChange={(e) => setEditedName(e.target.value)}
+                    onBlur={handleEditSubmit}
+                    onKeyDown={(e) => e.key === 'Enter' && handleEditSubmit()}
+                    className="h-7 text-sm py-0 px-2 font-semibold"
+                  />
+                ) : (
+                  <span className="text-sm font-semibold text-foreground truncate block">
+                    {node.name}
+                  </span>
+                )}
+              </div>
             </div>
 
-            <div className="flex items-center gap-1 shrink-0">
+            <div className="flex items-center gap-0.5 shrink-0">
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="h-8 w-8 rounded-full hover:bg-primary/30"
+                className="h-7 w-7 rounded-full hover:bg-muted"
+                onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
+                title="Edit name"
+              >
+                <Pencil className="h-3 w-3" />
+              </Button>
+
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-7 w-7 rounded-full hover:bg-primary/30"
                 onClick={(e) => { e.stopPropagation(); setIsAddDialogOpen(true); }}
                 title="Add direct report"
               >
@@ -118,7 +162,7 @@ export const OrgNode: React.FC<OrgNodeProps> = ({ node, onAdd, deleteNode, isLas
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="h-8 w-8 rounded-full hover:bg-destructive/10 text-destructive/70 hover:text-destructive"
+                  className="h-7 w-7 rounded-full hover:bg-destructive/10 text-destructive/70 hover:text-destructive"
                   onClick={(e) => { e.stopPropagation(); setIsDeleteDialogOpen(true); }}
                   title="Remove person"
                 >
@@ -130,7 +174,7 @@ export const OrgNode: React.FC<OrgNodeProps> = ({ node, onAdd, deleteNode, isLas
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="h-8 w-8 rounded-full"
+                  className="h-7 w-7 rounded-full"
                   onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
                 >
                   {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
@@ -150,6 +194,7 @@ export const OrgNode: React.FC<OrgNodeProps> = ({ node, onAdd, deleteNode, isLas
                 key={child.id} 
                 node={child} 
                 onAdd={onAdd} 
+                updateNodeName={updateNodeName}
                 deleteNode={deleteNode}
                 isLast={index === node.children.length - 1}
               />
