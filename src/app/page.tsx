@@ -13,6 +13,7 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
+  DragStartEvent,
   DragOverlay,
   defaultDropAnimationSideEffects,
 } from '@dnd-kit/core';
@@ -40,8 +41,8 @@ export default function Home() {
     setCurrentYear(new Date().getFullYear());
   }, []);
 
-  const handleDragStart = (event: { active: { id: string } }) => {
-    setActiveId(event.active.id);
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(String(event.active.id));
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -85,7 +86,7 @@ export default function Home() {
               Hierarchy Visualizer
             </h1>
             <p className="text-lg text-muted-foreground">
-              Manage your team's reporting structure with lazy loading and drag-and-drop.
+              Manage your team's reporting structure.
             </p>
           </div>
           
